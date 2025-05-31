@@ -1,0 +1,38 @@
+{
+  "name": "activity-tracker",
+  "version": "1.0.0",
+  "description": "An Electron application to track user activity.",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "package": "electron-builder"
+  },
+  "keywords": [
+    "electron",
+    "activity",
+    "tracker"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@josephuspaye/list-open-windows": "^0.1.2",
+    "active-win": "^8.2.1"
+  },
+  "devDependencies": {
+    "electron": "^26.0.0",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "your.app.id",
+    "productName": "Activity Tracker",
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "icon": "icon.ico"
+    },
+    "directories": {
+      "output": "dist"
+    }
+  }
+}

@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Activity Tracker</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body data-theme="light">
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-chart-line"></i> Activity Tracker</h1>
+            <div class="controls">
+                <button class="theme-toggle" id="themeToggle">
+                    <i class="fas fa-moon"></i>
+                </button>
+                <button class="reset-btn" id="resetBtn">
+                    <i class="fas fa-redo"></i> Reset
+                </button>
+            </div>
+        </header>
+
+        <nav class="tabs">
+            <button class="tab active" data-tab="dashboard">Dashboard</button>
+            <button class="tab" data-tab="summary">Detailed Summary</button>
+        </nav>
+
+        <div id="dashboardScreen" class="screen active">
+            <div class="stats-container">
+                <div class="stat-card">
+                    <div class="stat-label">Total Tracked Time</div>
+                    <div class="stat-value" id="totalTime">0h 0m</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Tracked Applications</div>
+                    <div class="stat-value" id="appCount">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Active Since</div>
+                    <div class="stat-value" id="activeSince">00:00</div>
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <div class="chart-header">
+                    <h2 class="chart-title">Application Time Distribution</h2>
+                </div>
+                <div class="chart-wrapper">
+                    <canvas id="activityChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div id="summaryScreen" class="screen">
+            <div class="summary-container">
+                <div class="summary-header">
+                    <h2 class="summary-title">Detailed Summary</h2>
+                    <div class="summary-controls">
+                        
+                    </div>
+                </div>
+                <div id="summaryList" class="activity-list">
+                    <div class="empty-state">
+                        <i class="fas fa-clock"></i>
+                        <h3>No activity data yet</h3>
+                        <p>Active applications will appear here</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Новый блок для детального графика -->
+        <div id="detailedActivityScreen" class="screen">
+            <div class="chart-container">
+                <div class="chart-header">
+                    <h2 class="chart-title">Detailed Activity for <span id="detailedAppTitle"></span></h2>
+                    <button class="back-btn" id="backToDashboardBtn"><i class="fas fa-arrow-left"></i> Back</button>
+                </div>
+                <div class="chart-wrapper">
+                    <canvas id="detailedActivityChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="renderer.js"></script>
+</body>
+</html>
