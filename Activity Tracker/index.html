@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Activity Tracker</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">   
     <link rel="stylesheet" href="styles.css">
 </head>
 <body data-theme="light">
@@ -24,6 +24,7 @@
         <nav class="tabs">
             <button class="tab active" data-tab="dashboard">Dashboard</button>
             <button class="tab" data-tab="summary">Detailed Summary</button>
+            <button class="tab" data-tab="notes">Notes</button>
         </nav>
 
         <div id="dashboardScreen" class="screen active">
@@ -46,7 +47,7 @@
                 <div class="chart-header">
                     <h2 class="chart-title">Application Time Distribution</h2>
                 </div>
-                <div class="chart-wrapper">
+                <div class="chart-wrapper active">
                     <canvas id="activityChart"></canvas>
                 </div>
             </div>
@@ -60,7 +61,7 @@
                         
                     </div>
                 </div>
-                <div id="summaryList" class="activity-list">
+                <div id="detailedSummaryList" class="activity-list">
                     <div class="empty-state">
                         <i class="fas fa-clock"></i>
                         <h3>No activity data yet</h3>
@@ -70,7 +71,6 @@
             </div>
         </div>
 
-        <!-- Новый блок для детального графика -->
         <div id="detailedActivityScreen" class="screen">
             <div class="chart-container">
                 <div class="chart-header">
@@ -83,7 +83,49 @@
             </div>
         </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <div id="notesScreen" class="screen">
+            <div class="notes-container">
+               
+                <div id="notesList" class="notes-list">
+                    <!-- Заметки будут добавляться сюда -->
+                </div>
+                
+                <button id="addNoteFab" class="fab-button">
+                    <i class="fas fa-plus"></i>
+                </button>
+            </div>
+        </div>
+
+    <!-- Модальное окно для заметок -->
+    <div id="noteModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Add New Note</h2>
+                <span class="close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="modalNoteTitle">Title*</label>
+                    <input type="text" id="modalNoteTitle" class="form-input" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="modalNoteContent">Content</label>
+                    <textarea id="modalNoteContent" class="form-textarea"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="modalNoteDueDate">Due Date (optional)</label>
+                    <input type="datetime-local" id="modalNoteDueDate" class="form-input">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="modalSaveNoteBtn" class="btn-primary">Save Note</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>   
     <script src="renderer.js"></script>
 </body>
 </html>

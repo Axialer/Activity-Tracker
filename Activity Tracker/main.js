@@ -1,14 +1,21 @@
-const { app, BrowserWindow, ipcMain, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, Notification, Menu } = require('electron');
 const path = require('path');
 // const activeWin = require('active-win'); // Используем новый пакет
 const { listOpenWindows } = require('@josephuspaye/list-open-windows');
 const fs = require('fs');
+const fsPromises = require('fs').promises; // Добавил для использования асинхронных файловых операций
+const activeWindow = require('active-win');
+
+const notesPath = path.join(app.getPath('userData'), 'notes.json'); // Путь к файлу данных для заметок
 
 let intervalId = null;
 let activityData = {}; // Суммарные данные активности по приложениям (секунды)
 let activityLog = []; // Журнал активности: [{ timestamp: Date, appName: string }, ...]
 let trackingInterval = 1000; // Интервал отслеживания по умолчанию (1 секунда)
 let appStartTime = null; // Время запуска приложения
+
+// Хранилище для таймера уведомлений
+let notificationTimer = null;
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -107,6 +114,10 @@ function stopTracking() {
 }
 
 app.whenReady().then(() => {
+  // Разрешение на показ уведомлений
+  if (process.platform === 'win32') {
+    app.setAppUserModelId(app.name);
+  }
   createWindow();
   appStartTime = new Date(); // Записываем время запуска приложения
   sendActivityUpdate(); // Отправляем начальные данные (пустые) и время запуска
@@ -128,6 +139,18 @@ ipcMain.on('reset-activity-data', () => {
     sendActivityUpdate();
     console.log('Activity data reset');
   });
+
+ipcMain.handle('save-notes', async (event, notesData) => {
+    try {
+        const dir = path.dirname(notesPath); // Получаем директорию из пути к файлу
+        await fsPromises.mkdir(dir, { recursive: true }); // Создаем директорию, если она не существует
+        await fsPromises.writeFile(notesPath, notesData); // Используем fsPromises.writeFile
+        return true;
+    } catch (error) {
+        console.error('Failed to save notes:', error);
+        return false;
+    }
+});
   
 ipcMain.on('set-interval', (event, interval) => {
     stopTracking();
@@ -180,3 +203,70 @@ function sendActivityUpdate() {
     }
   }
 }
+
+// Обработчик обновления заметок
+ipcMain.on('update-notes', (event, notes) => {
+    // Отменяем предыдущий таймер
+    if (notificationTimer) {
+        clearTimeout(notificationTimer);
+        notificationTimer = null;
+    }
+    
+    // Фильтруем заметки, требующие уведомления
+    const now = new Date();
+    const upcomingNotes = notes.filter(note => 
+        !note.completed && 
+        !note.notified && 
+        new Date(note.dueDate) > now
+    );
+    
+    if (upcomingNotes.length > 0) {
+        // Сортируем по дате выполнения
+        upcomingNotes.sort((a, b) => 
+            new Date(a.dueDate) - new Date(b.dueDate)
+        );
+        
+        const nextNote = upcomingNotes[0];
+        const timeUntilNotification = new Date(nextNote.dueDate) - now;
+        
+        // Устанавливаем новый таймер
+        notificationTimer = setTimeout(() => {
+            // Отправляем уведомление
+            const notification = new Notification({
+                title: nextNote.title,
+                body: nextNote.content
+            });
+            notification.show();
+            
+            // Отправляем событие в renderer
+            event.sender.send('note-notified', nextNote.id);
+            
+            // Планируем следующее уведомление
+            event.sender.send('request-notes-update');
+        }, timeUntilNotification);
+    }
+});
+
+// Обработчик IPC для загрузки заметок
+ipcMain.handle('load-notes', async () => { // Сделал асинхронной
+    try {
+        if (fs.existsSync(notesPath)) {
+            return await fsPromises.readFile(notesPath, 'utf-8'); // Используем fsPromises.readFile
+        }
+        return '[]'; // Возвращаем пустой массив, если файла нет
+    } catch (error) {
+        console.error('Error loading notes:', error);
+        return '[]'; // Возвращаем пустой массив в случае ошибки
+    }
+});
+
+// API для показа уведомлений
+ipcMain.handle('show-notification', (event, title, message) => {
+    const notification = new Notification({ title, body: message });
+    notification.show();
+});
+
+// API для запроса обновления заметок
+ipcMain.on('request-notes-update', (event) => {
+    event.sender.send('update-notes-request');
+});
