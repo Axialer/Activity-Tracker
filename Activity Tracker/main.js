@@ -39,64 +39,74 @@ function createWindow() {
 async function trackActiveWindow() {
   try {
     const windows = listOpenWindows();
-    // console.log(`Found ${windows.length} open windows.`); // Remove Log 1
-    const countedProcesses = new Set(); // Для отслеживания процессов, учтенных в этом интервале для activityData
-    let currentActiveApp = null; // Определим активное приложение по zOrder (будем искать минимальный zOrder)
-    let minZOrder = Infinity; // Переменная для поиска минимального zOrder
-
-    if (windows.length === 0) {
-        // Если нет открытых окон (рабочий стол, бездействие)
-        activityLog.push({ timestamp: new Date().toISOString(), appName: 'Idle' });
-        // console.log(`Record added to log: Idle. Total records: ${activityLog.length}`); // Remove Log 4 (Idle)
-        sendActivityUpdate(); // Отправляем обновление, даже если данных нет (для сброса Total Time/Count)
-        return;
-    }
-
     const now = new Date();
     const intervalSeconds = trackingInterval / 1000;
 
-    // Перебираем все открытые окна для обновления суммарных данных и поиска активного (с минимальным zOrder)
+    let currentActiveApp = null;
+    let minZOrder = Infinity;
+    const openProcessNames = new Set(); // To track all currently open unique app process names
+
+    // Step 1: Determine the current active application and collect all open process names
     windows.forEach(win => {
-        // Игнорируем окна без заголовка или с определенными классами, которые не являются основными приложениями
         if (!win.caption || win.className.startsWith('Shell_') || win.className === 'WorkerW') {
             return;
         }
         const processPath = win.processPath;
         if (processPath) {
             const processName = path.basename(processPath).replace('.exe', '');
+            openProcessNames.add(processName); // Add to set of all currently open processes
 
-            // Обновляем суммарное время для любого процесса с видимым окном в этом интервале
-             if (!countedProcesses.has(processName)) {
-                 activityData[processName] = (activityData[processName] || 0) + intervalSeconds;
-                 countedProcesses.add(processName); // Отмечаем процесс как учтенный
-             }
-
-             // Определяем активное приложение по минимальному zOrder
-             // console.log(`Window: ${win.caption} | Process: ${processName} | zOrder: ${win.zOrder}`); // Remove Log 2
-             if (win.zOrder < minZOrder) {
-                 minZOrder = win.zOrder;
-                 currentActiveApp = processName;
-                 // console.log(`Tentative active window: ${processName} (zOrder: ${win.zOrder})`); // Optional: Лог 3 (промежуточный)
-             }
+            if (win.zOrder < minZOrder) {
+                minZOrder = win.zOrder;
+                currentActiveApp = processName;
+            }
         }
     });
-    
-    // console.log(`Final active window determined: ${currentActiveApp}`); // Remove Log 3
 
-     // Записываем в лог найденное активное приложение (с минимальным zOrder)
-     if (currentActiveApp) {
-         activityLog.push({ timestamp: now.toISOString(), appName: currentActiveApp });
-         // console.log(`Record added to log: ${currentActiveApp}. Total records: ${activityLog.length}`); // Remove Log 4 (Active)
-     } // else: Если currentActiveApp остался null (например, все окна были отфильтрованы), в лог ничего не пишется
+    // Step 2: Update activityData for active, inactive, and possibly closed apps
+    // Initialize activityData for new apps if they appear
+    openProcessNames.forEach(processName => {
+        if (!activityData[processName]) {
+            activityData[processName] = { active: 0, inactive: 0 };
+        }
+    });
 
-    // Отправляем обновленные суммарные данные в рендерер-процесс
+    // Now, go through all previously tracked apps in activityData to see if they are still open
+    for (const appName in activityData) {
+        if (openProcessNames.has(appName)) {
+            // App is still open
+            if (appName === currentActiveApp) {
+                activityData[appName].active += intervalSeconds;
+                activityLog.push({ timestamp: now.toISOString(), appName: appName }); // Only log the actively used app
+            } else {
+                activityData[appName].inactive += intervalSeconds;
+            }
+        }
+        // If appName is NOT in openProcessNames, it means the app is closed.
+        // We do nothing to its accumulated time, it just stays as is.
+    }
+
+    // Handle Idle time if no active app was found among open windows
+    if (!currentActiveApp && openProcessNames.size === 0) {
+        activityLog.push({ timestamp: now.toISOString(), appName: 'Idle' });
+    } else if (!currentActiveApp && openProcessNames.size > 0) {
+        // This case means there are open windows but no single active one could be determined (e.g. all filtered)
+        // For simplicity, we can treat this as idle or as inactive time for all open apps.
+        // Let's increment inactive for all openProcessNames in this case
+        openProcessNames.forEach(processName => {
+            if (!activityData[processName]) {
+                activityData[processName] = { active: 0, inactive: 0 };
+            }
+            activityData[processName].inactive += intervalSeconds;
+        });
+    }
+
     sendActivityUpdate();
 
   } catch (err) {
     console.error('Error getting open windows:', err);
-    activityLog.push({ timestamp: new Date().toISOString(), appName: 'Error' }); // Записываем ошибку в лог
-    // console.log(`Record added to log: Error. Total records: ${activityLog.length}`); // Optional: Log for Error
-    sendActivityUpdate(); // Отправляем обновление даже при ошибке
+    activityLog.push({ timestamp: new Date().toISOString(), appName: 'Error' });
+    sendActivityUpdate();
   }
 }
 
@@ -139,6 +149,16 @@ ipcMain.on('reset-activity-data', () => {
     sendActivityUpdate();
     console.log('Activity data reset');
   });
+
+ipcMain.handle('load-notes', async () => {
+    try {
+        const data = await fsPromises.readFile(notesPath, 'utf8');
+        return data;
+    } catch (error) {
+        console.error('Failed to load notes:', error);
+        return '[]'; // Return empty array if file doesn't exist
+    }
+});
 
 ipcMain.handle('save-notes', async (event, notesData) => {
     try {
@@ -244,19 +264,6 @@ ipcMain.on('update-notes', (event, notes) => {
             // Планируем следующее уведомление
             event.sender.send('request-notes-update');
         }, timeUntilNotification);
-    }
-});
-
-// Обработчик IPC для загрузки заметок
-ipcMain.handle('load-notes', async () => { // Сделал асинхронной
-    try {
-        if (fs.existsSync(notesPath)) {
-            return await fsPromises.readFile(notesPath, 'utf-8'); // Используем fsPromises.readFile
-        }
-        return '[]'; // Возвращаем пустой массив, если файла нет
-    } catch (error) {
-        console.error('Error loading notes:', error);
-        return '[]'; // Возвращаем пустой массив в случае ошибки
     }
 });
 

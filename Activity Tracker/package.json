@@ -16,7 +16,8 @@
   "license": "ISC",
   "dependencies": {
     "@josephuspaye/list-open-windows": "^0.1.2",
-    "active-win": "^8.2.1"
+    "active-win": "^8.2.1",
+    "marked": "^15.0.12"
   },
   "devDependencies": {
     "electron": "^26.0.0",

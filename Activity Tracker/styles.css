@@ -58,6 +58,9 @@ body {
 .container {
     max-width: 1200px;
     margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    min-height: calc(100vh - 40px);
 }
 
 header {
@@ -138,10 +141,12 @@ h1 {
 
 .screen {
     display: none;
+    height: 100%;
+    flex-direction: column;
 }
 
 .screen.active {
-    display: block;
+    display: flex;
 }
 
 .stats-container {
@@ -562,39 +567,111 @@ input:checked + .slider:before {
     font-size: 1em;
 }
 
-/* Стили для экрана заметок */
+/* Notes container */
 .notes-container {
     padding: 20px;
     max-width: 800px;
     margin: 0 auto;
-    position: relative; /* Добавляем для позиционирования FAB */
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.notes-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-shrink: 0;
 }
 
 .notes-list {
-    display: grid;
+    max-height: 450px;
+    overflow-y: auto;
+    padding-right: 5px;
+    flex-grow: 1;
+    overflow-y: auto;
+    padding-right: 10px;
+    display: flex;
+    flex-direction: column;
     gap: 15px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--primary) var(--card-bg);
 }
 
+.notes-list::-webkit-scrollbar {
+    width: 8px;
+}
+
+.notes-list::-webkit-scrollbar-track {
+    background: var(--card-bg);
+    border-radius: 4px;
+}
+
+.notes-list::-webkit-scrollbar-thumb {
+    background: var(--primary);
+    border-radius: 4px;
+}
+
+.notes-list::-webkit-scrollbar-thumb:hover {
+    background: var(--primary-dark);
+}
+
+/* Fixed note styles */
 .note {
     background: var(--card-bg);
-    border-radius: 12px;
-    padding: 20px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-    border-left: 4px solid var(--primary);
-    transition: transform 0.2s;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 15px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    transition: all 0.3s ease;
+    border-left: 5px solid #4361ee;
+    display: flex;
+    flex-direction: column;
 }
 
 .note:hover {
-    transform: translateY(-3px);
+    transform: translateY(-2px);
+}
+
+body[data-theme="light"] .note.important {
+    border-left: 4px solid #ffc107;
+}
+
+body[data-theme="light"] .note.urgent {
+    border-left: 4px solid #dc3545;
+}
+
+body[data-theme="light"] .note.general {
+    border-left: 4px solid #28a745;
+}
+
+body[data-theme="dark"] .note.important {
+    border-left: 4px solid #997805;
+}
+
+body[data-theme="dark"] .note.urgent {
+    border-left: 4px solid #8b1e2a;
+}
+
+body[data-theme="dark"] .note.general {
+    border-left: 4px solid #1a6633;
 }
 
 .note.completed {
     opacity: 0.7;
-    border-left-color: var(--success);
+    border-left: 4px solid var(--gray);
 }
 
-.note.overdue {
-    border-left-color: var(--danger);
+.note-content.markdown-body {
+    padding: 20px;
+    word-wrap: break-word;
+    margin-top: 10px;
+    border-top: 1px solid var(--border);
+}
+
+.note.expanded .note-content.markdown-body {
+    max-height: 1000px; /* Large enough to accommodate most content */
 }
 
 .note-header {
@@ -613,12 +690,6 @@ input:checked + .slider:before {
 .note-actions {
     display: flex;
     gap: 10px;
-}
-
-.note-content {
-    color: var(--text);
-    margin-bottom: 15px;
-    line-height: 1.5;
 }
 
 .note-meta {
@@ -696,42 +767,45 @@ input:checked + .slider:before {
     align-items: center;
     gap: 5px;
     cursor: pointer;
+    user-select: none;
 }
 
-/* Floating Action Button */
-.fab-button {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
-    background-color: var(--primary);
-    color: white;
-    border: none;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-    font-size: 24px;
-    cursor: pointer;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-    transition: transform 0.2s, background-color 0.2s;
+/* Markdown styles */
+.markdown-body {
+    color: var(--text);
 }
 
-.fab-button:hover {
-    background-color: var(--primary-dark);
-    transform: scale(1.1);
+.markdown-body h1, .markdown-body h2, .markdown-body h3 {
+    color: var(--dark);
 }
 
-/* Скрываем FAB на других вкладках */
-#dashboardScreen .fab-button,
-#detailedActivityScreen .fab-button,
-#summaryScreen .fab-button {
-    display: none;
+.markdown-body code {
+    background: var(--border);
+    color: var(--text);
+    padding: 2px 4px;
+    border-radius: 4px;
 }
 
-/* Модальное окно */
+body[data-theme="dark"] .markdown-body {
+    color: var(--text);
+}
+
+body[data-theme="dark"] .markdown-body h1,
+body[data-theme="dark"] .markdown-body h2,
+body[data-theme="dark"] .markdown-body h3 {
+    color: var(--text);
+}
+
+body[data-theme="dark"] .markdown-body code {
+    background: var(--border);
+    color: var(--text);
+}
+
+body[data-theme="dark"] .markdown-body a {
+    color: #4cc9f0;
+}
+
+/* Modal styles */
 .modal {
     position: fixed;
     top: 0;
@@ -861,7 +935,6 @@ input:checked + .slider:before {
     background-color: var(--primary-dark);
 }
 
-/* Иконки для кнопок (редактирование/удаление в списке заметок) */
 .icon-btn {
     background: none;
     border: none;
@@ -877,10 +950,121 @@ input:checked + .slider:before {
     color: var(--primary);
 }
 
-.status-label {
+.fab-button {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background-color: var(--primary);
+    color: white;
+    border: none;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    font-size: 24px;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    transition: transform 0.2s, background-color 0.2s;
+}
+
+.fab-button:hover {
+    background-color: var(--primary-dark);
+    transform: scale(1.1);
+}
+
+#dashboardScreen .fab-button,
+#summaryScreen .fab-button {
+    display: none;
+}
+
+.note.general {
+    border-left: 5px solid #28a745;
+}
+
+.note.important {
+    border-left: 5px solid #ffc107;
+}
+
+.note.urgent {
+    border-left: 5px solid #3540dc;
+}
+
+.note.overdue {
+    border-left: 5px solid #f94144 !important;
+}
+
+.time-container {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+}
+
+.time-row {
     display: flex;
     align-items: center;
-    gap: 8px;
-    cursor: pointer;
-    user-select: none;
+    margin-bottom: 3px;
+}
+
+.time-label {
+    font-size: 0.8rem;
+    margin-right: 8px;
+    color: var(--text-light);
+}
+
+.time-row.total .time-label {
+    font-weight: bold;
+    color: var(--text);
+}
+
+.app-time {
+    font-weight: 600;
+    min-width: 40px;
+    text-align: right;
+}
+
+.time-unit {
+    font-size: 0.7rem;
+    margin-left: 2px;
+    font-weight: normal;
+}
+
+/* Добавляем отступы для контента заметки */
+.note-content.markdown-body {
+    padding: 20px;
+    word-wrap: break-word;
+    margin-top: 10px;
+    border-top: 1px solid var(--border);
+}
+
+/* Исправляем цвет заголовка в темной теме */
+[data-theme="dark"] .note-title {
+    color: var(--text) !important;
+}
+
+/* Увеличиваем отступы в заметке */
+.note {
+    padding: 15px;
+}
+
+/* Улучшаем отображение Markdown в темной теме */
+[data-theme="dark"] .markdown-body {
+    color: var(--text);
+}
+
+[data-theme="dark"] .markdown-body h1,
+[data-theme="dark"] .markdown-body h2,
+[data-theme="dark"] .markdown-body h3 {
+    color: var(--text);
+}
+
+[data-theme="dark"] .markdown-body a {
+    color: #4cc9f0;
+}
+
+/* Поднимаем элемент sortNotes на 15px вверх */
+#sortNotes {
+    margin-top: -15px;
 }
