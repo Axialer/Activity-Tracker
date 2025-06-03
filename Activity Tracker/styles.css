@@ -570,7 +570,7 @@ input:checked + .slider:before {
 /* Notes container */
 .notes-container {
     padding: 20px;
-    max-width: 800px;
+    width: 800px;
     margin: 0 auto;
     flex-grow: 1;
     display: flex;
